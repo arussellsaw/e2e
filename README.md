@@ -2,8 +2,6 @@
 
 a package to help you run end to end tests on your services and infrastructure. This package aims to allow users to write tests in the same they would with the testing package, and have them run continuously in production, to alert on regressions and issues not picked up by unit and integration testing. This package is still in development, and will be liable to breaking changes.
 
-inspired by @MattHeath's talk on testing production services at Hailo (need to find the link)
-
 ## TODO
 * Notifier interface
 * slack notifier

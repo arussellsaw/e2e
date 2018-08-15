@@ -13,6 +13,7 @@ const (
 	PanicSkipNow = "skipnow"
 )
 
+// Run a Test with a given name, returning the *T used by the test
 func Run(name string, testFn Test) (t *T) {
 	t = &T{name: name}
 	defer func() {
@@ -38,6 +39,8 @@ func Run(name string, testFn Test) (t *T) {
 	return
 }
 
+// Test is a test function these should be written in a similar manner to tests with the "testing" package
+// only they should not be placed in files named _test.go as they won't be compiled
 type Test func(t *T)
 
 // T is used in the same way as testing.T in test functions,

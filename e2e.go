@@ -13,7 +13,7 @@ const (
 	PanicSkipNow = "skipnow"
 )
 
-func runTest(name string, testFn Test) (t *T) {
+func Run(name string, testFn Test) (t *T) {
 	t = &T{name: name}
 	defer func() {
 		if r := recover(); r != nil {
@@ -40,6 +40,10 @@ func runTest(name string, testFn Test) (t *T) {
 
 type Test func(t *T)
 
+// T is used in the same way as testing.T in test functions,
+// the main difference is that T is executed in a regular go binary
+// rather than test binary. T satisfies the testing.TB interface
+// as best it can, as testing.TB contains unexported methods.
 type T struct {
 	name string
 
@@ -52,6 +56,7 @@ type T struct {
 	helpers  map[string]struct{}
 }
 
+// Name returns the name of this test
 func (t *T) Name() string {
 	return t.name
 }
@@ -62,51 +67,64 @@ func (t *T) log(s string) {
 	t.output = append(t.output, t.decorate(s)...)
 }
 
+// Log some output to the test log, args will be printed with fmt.Sprint
 func (t *T) Log(args ...interface{}) {
 	t.log(fmt.Sprint(args...))
 }
 
+// Logf logs output with formatting, printed using fmt.Sprintf
 func (t *T) Logf(f string, v ...interface{}) {
 	t.log(fmt.Sprintf(f, v...))
 }
 
+// Error logs the arguments with fmt.Sprint, and marks the test as failed, but does not abort
 func (t *T) Error(args ...interface{}) {
 	t.Fail()
 	t.log(fmt.Sprint(args...))
 }
 
+// Errorf is the same as t.Error but with formatting
 func (t *T) Errorf(f string, v ...interface{}) {
 	t.Fail()
 	t.log(fmt.Sprintf(f, v...))
 }
 
+// Fatal logs the arguments then immediately aborts the test using t.FailNow()
 func (t *T) Fatal(args ...interface{}) {
 	t.log(fmt.Sprint(args...))
 	t.FailNow()
 }
 
+// Fatalf is the same as Fatal, but logs with formatting using fmt.Sprintf
 func (t *T) Fatalf(f string, v ...interface{}) {
 	t.log(fmt.Sprintf(f, v...))
 	t.FailNow()
 }
 
+// Fail marks this test as failed
 func (t *T) Fail() {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	t.failed = true
 }
 
+// FailNow marks this test as failed and aborts the test
+// this is done using a panic with a special value, handled by a recover in e2e.Run
+// panics in tests other than those with the magic values will be handled by the recover
+// but panicked again, unfortunately losing the stack trace. will try and work around this in future if possible
 func (t *T) FailNow() {
 	t.Fail()
 	panic(PanicFailNow)
 }
 
+// Failed tells you whether or not a test failed
 func (t *T) Failed() bool {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	return t.failed
 }
 
+// Output gives you the log output of a test
 func (t *T) Output() []byte {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
@@ -125,8 +143,9 @@ func (t *T) Output() []byte {
 	return append(t.output, "PASS\n"...)
 }
 
+// Run is used to run subtests, any failed subtests will cause the parent test to fail
 func (t *T) Run(name string, testFn Test) {
-	tt := runTest(name, testFn)
+	tt := Run(name, testFn)
 	if tt.Failed() {
 		t.Fail()
 	}
@@ -136,26 +155,37 @@ func (t *T) Run(name string, testFn Test) {
 	t.subTests = append(t.subTests, tt)
 }
 
+// Skip logs the args, then aborts the test without marking as failed, using the same panic based
+// mechanism as FailNow()
 func (t *T) Skip(args ...interface{}) {
 	t.Log(args...)
 	t.SkipNow()
 }
 
+// Skipf is the same as Skip but with formatting
 func (t *T) Skipf(s string, v ...interface{}) {
 	t.Logf(s, v...)
 	t.SkipNow()
 }
 
+// SkipNow panics with a magic value that allows the test to abort without the user returning,
+// and is handled by a recover in e2e.Run()
 func (t *T) SkipNow() {
+	t.mu.Lock()
+	t.skipped = true
+	t.mu.Unlock()
 	panic(PanicSkipNow)
 }
 
+// Skipped tells you whether or not a test was skipped
 func (t *T) Skipped() bool {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	return t.skipped
 }
 
+// Helper marks a function as a testing helper, this allows the log decoration to ignore it to provide
+// more informative output as to the source of logs
 func (t *T) Helper() {
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -209,11 +239,8 @@ func (t *T) decorate(s string) string {
 // frameSkip searches, starting after skip frames, for the first caller frame
 
 // in a function not marked as a helper and returns the frames to skip
-
 // to reach that site. The search stops if it finds a tRunner function that
-
 // was the entry point into the test.
-
 // This function must be called with c.mu held.
 func (t *T) frameSkip(skip int) int {
 	if t.helpers == nil {

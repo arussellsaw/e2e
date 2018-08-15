@@ -69,7 +69,7 @@ type testRunner struct {
 func (tr *testRunner) runJob() {
 	tr.mu.Lock()
 	defer tr.mu.Unlock()
-	e := runTest(tr.Name, tr.t)
+	e := Run(tr.Name, tr.t)
 	if e.Failed() {
 		tr.Failing = true
 		tr.Failures++

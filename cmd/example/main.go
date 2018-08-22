@@ -1,13 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/arussellsaw/e2e"
-	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -17,17 +14,7 @@ func main() {
 	r.Schedule("TestAlwaysFails", TestAlwaysFails, 10*time.Second)
 	r.Schedule("TestSubtests", TestSubtests, 10*time.Second)
 
-	m := mux.NewRouter()
-	h, err := r.GetUIHandler()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	m.Handle("/ui", h)
-	m.Handle("/status", http.HandlerFunc(r.StatusHandler))
-
-	http.ListenAndServe(":8080", m)
+	http.ListenAndServe(":8080", r.Mux())
 }
 
 func TestAlwaysPasses(t *e2e.T) {

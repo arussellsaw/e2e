@@ -13,6 +13,7 @@ func main() {
 	r.Schedule("TestAlwaysPasses", TestAlwaysPasses, 10*time.Second)
 	r.Schedule("TestAlwaysFails", TestAlwaysFails, 10*time.Second)
 	r.Schedule("TestSubtests", TestSubtests, 10*time.Second)
+	r.Schedule("TestSlow", TestSlow, 1*time.Minute)
 
 	http.ListenAndServe(":8080", r.Mux())
 }
@@ -53,4 +54,15 @@ func TestSubtests(t *e2e.T) {
 			}
 		})
 	}
+}
+
+func TestSlow(t *e2e.T) {
+	t.Logf("this test is slow")
+	time.Sleep(1 * time.Second)
+	t.Logf("it logs periodically")
+	time.Sleep(30 * time.Second)
+	t.Logf("hopefully it's done soon")
+	time.Sleep(30 * time.Second)
+	t.Logf("done")
+	t.Logf("")
 }

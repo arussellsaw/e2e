@@ -16,6 +16,11 @@ const (
 // Run a Test with a given name, returning the *T used by the test
 func Run(name string, testFn Test) (t *T) {
 	t = &T{name: name}
+	doRun(name, testFn, t)
+	return t
+}
+
+func doRun(name string, testFn Test, t *T) {
 	defer func() {
 		if r := recover(); r != nil {
 			switch r {
@@ -36,6 +41,7 @@ func Run(name string, testFn Test) (t *T) {
 		}
 	}()
 	testFn(t)
+	t.done = true
 	return
 }
 
@@ -53,6 +59,7 @@ type T struct {
 	mu       sync.RWMutex
 	failed   bool
 	skipped  bool
+	done     bool
 	output   []byte
 	subTests []*T
 	runner   string
@@ -136,6 +143,9 @@ func (t *T) Output() []byte {
 			t.output = append(t.output, t.subTests[i].Output()...)
 			t.output = append(t.output, '\n')
 		}
+	}
+	if !t.done {
+		return t.output
 	}
 	if t.Skipped() {
 		return append(t.output, "skipped\n"...)

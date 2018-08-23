@@ -10,26 +10,7 @@
 			<div class="container">
 				<div class="columns is-multiline">
 					<div class="column is-half" v-for="test in testData" v-bind:key="test.Name">
-						<div class="has-text-white" style="border-radius: 3px; padding: 2rem;" v-bind:class="testClasses(test)">
-							<h1 class="title is-4 has-text-white">
-								{{ test.Name }}
-							</h1>
-							<div class="columns" style="height:100px;">
-								<div class="column is-one-third">
-									<p class="is-size-7">failing: {{ test.Failing }}</p>
-									<p class="is-size-7">pass rate: {{ Math.round(((test.Successes/(test.Successes+test.Failures)) * 100)||0) }}%</p>
-								</div>
-								<div style="
-								overflow-y: scroll; 
-								overflow-x: scroll; 
-								padding: 0.5rem; 
-								margin-right: 1.5rem;
-								border-radius: 3px;
-								" class="has-background-grey-dark column is-two-thirds" v-if="isFailing(test)">
-									<p style="white-space: pre;" class="is-size-7" v-if="isFailing(test)">{{test.LastFailureOutput}}</p>
-								</div>
-							</div>
-						</div>
+						<TestBox v-bind:test="test"/>
 					</div>
 				</div>
 			</div>
@@ -38,6 +19,7 @@
 
 <script>
 import HelloWorld from './components/HelloWorld.vue'
+import TestBox from './components/TestBox.vue'
 
 export default {
   name: 'app',
@@ -47,30 +29,26 @@ export default {
 		}
 	},
   components: {
-    HelloWorld
+    HelloWorld,
+		TestBox
   },
 	mounted: function () {
-			var req = new Request("/status")
-			fetch(req).then(res => res.json())
-				.then((body) => {
-					this.$nextTick(function () {
-						this.testData = body;
-					})
-				})
+		getTestStatus(this)
+		var self = this;
+		setInterval(function() {getTestStatus(self)}, 10000)
 	},
 	methods: {
-		testClasses: function (test) {
-			return {
-				'has-background-danger': test.State == "FAILED",
-				'has-background-success': test.State == "PASSED",
-				'has-background-grey-light': test.State == "RUNNING",
-				'has-background-grey-dark': test.State == "",
-			}
-		},
-		isFailing: function (test) {
-			return test.State == "FAILED"
-		}
 	},
+}
+
+var getTestStatus = function(self) {
+			var req = new Request("/api/status")
+			fetch(req).then(res => res.json())
+				.then((body) => {
+					self.$nextTick(function () {
+						self.testData = body;
+					})
+				})
 }
 </script>
 

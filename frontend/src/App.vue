@@ -18,7 +18,6 @@
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
 import TestBox from './components/TestBox.vue'
 
 export default {
@@ -29,7 +28,6 @@ export default {
 		}
 	},
   components: {
-    HelloWorld,
 		TestBox
   },
 	mounted: function () {
@@ -42,7 +40,7 @@ export default {
 }
 
 var getTestStatus = function(self) {
-			var req = new Request("/api/status")
+			var req = new Request("/api/v1/namespaces/default/services/e2e/proxy/api/status")
 			fetch(req).then(res => res.json())
 				.then((body) => {
 					self.$nextTick(function () {

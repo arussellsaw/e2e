@@ -32,6 +32,11 @@ func (r *Runner) Mux() http.Handler {
 	m.HandleFunc("/api/force/{name}", r.ForceRunHandler)
 	m.HandleFunc("/api/log/{name}", r.LiveOutputHandler)
 
+	m.HandleFunc("/healthz", func(w http.ResponseWriter, req *http.Request) {
+		w.Write([]byte("ok"))
+		return
+	})
+
 	return m
 }
 

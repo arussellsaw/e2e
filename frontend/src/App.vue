@@ -40,7 +40,7 @@ export default {
 }
 
 var getTestStatus = function(self) {
-			var req = new Request("/api/v1/namespaces/default/services/e2e/proxy/api/status")
+			var req = new Request("/api/status")
 			fetch(req).then(res => res.json())
 				.then((body) => {
 					self.$nextTick(function () {

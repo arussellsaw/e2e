@@ -35,7 +35,7 @@ var getOutput = function(self) {
 	if (self.state != "RUNNING") {
 		return
 	}
-	var req = new Request("/api/v1/namespaces/default/services/e2e/proxy/api/log/"+self.name)
+	var req = new Request("/api/log/"+self.name)
 	fetch(req).then(res => res.text())
 		.then(function(body) {
 			self.$nextTick(function() {

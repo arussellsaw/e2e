@@ -41,10 +41,22 @@ func (r *Runner) Mux() http.Handler {
 }
 
 func (r *Runner) Schedule(name string, t Test, interval time.Duration) {
+	r.schedule(name, t, interval, nil)
+}
+
+func (r *Runner) ScheduleWithNotifier(name string, t Test, interval time.Duration, n Notifier) {
+	r.schedule(name, t, interval, n)
+}
+
+func (r *Runner) schedule(name string, t Test, interval time.Duration, notifier Notifier) {
+	if notifier == nil {
+		notifier = defaultNotifier
+	}
 	r.mu.Lock()
 	tr := &testRunner{
 		Name: name,
 		t:    t,
+		n:    notifier,
 	}
 	if r.tests == nil {
 		r.tests = make(map[string]*testRunner)
@@ -143,6 +155,7 @@ const (
 type testRunner struct {
 	Name string
 	t    Test
+	n    Notifier
 
 	mu                sync.Mutex
 	currentT          *T
@@ -160,7 +173,9 @@ func (tr *testRunner) runJob() {
 	tr.State = TestStateRunning
 	t := &T{}
 	tr.currentT = t
+	start := time.Now()
 	doRun(tr.Name, tr.t, t)
+	taken := time.Since(start)
 	if t.Failed() {
 		tr.State = TestStateFailed
 		tr.Failures++
@@ -171,6 +186,12 @@ func (tr *testRunner) runJob() {
 		tr.Successes++
 		tr.LastSuccessTime = time.Now()
 	}
+	tr.n.Notify(Notification{
+		Name:     tr.Name,
+		Failed:   t.Failed(),
+		Output:   t.output,
+		Duration: taken,
+	})
 }
 
 type loggingFileSystem struct {
